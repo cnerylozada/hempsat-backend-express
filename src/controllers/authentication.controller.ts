@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
@@ -5,7 +6,7 @@ import { verifySignature } from "thirdweb/auth";
 import { sepolia } from "thirdweb/chains";
 import { thirdwebClient } from "../libs/thirdweb";
 import { supabaseClient } from "../libs/supabase";
-import { SIGNATURE_EXPIRY_SECONDS } from "../constants";
+import { SIGNATURE_EXPIRY_SECONDS, TOKEN_EXPIRY_DAYS } from "../constants";
 
 const signInSchema = z.object({
   wallet: z.string().min(1),
@@ -42,20 +43,48 @@ export const signIn = async (req: Request, res: Response) => {
     return;
   }
 
-  const token = jwt.sign(
-    { sub: wallet, role: "authenticated", aud: "authenticated" },
-    process.env.SUPABASE_JWT_SECRET!,
-    { expiresIn: "7d" },
+  const jti = randomUUID();
+  const expiresAt = new Date(
+    Date.now() + TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000,
   );
 
-  const { error } = await supabaseClient(token)
+  const token = jwt.sign(
+    { sub: wallet, jti },
+    process.env.SUPABASE_JWT_SECRET!,
+    { expiresIn: `${TOKEN_EXPIRY_DAYS}d` },
+  );
+
+  const { error: userError } = await supabaseClient(token)
     .from("users")
     .upsert({ id: wallet }, { onConflict: "id" });
 
-  if (error) {
+  if (userError) {
     res.status(500).json({ error: "Failed to create user" });
     return;
   }
 
+  const { error: sessionError } = await supabaseClient(token)
+    .from("sessions")
+    .insert({ id: jti, user_id: wallet, expires_at: expiresAt.toISOString() });
+
+  if (sessionError) {
+    res.status(500).json({ error: "Failed to create session" });
+    return;
+  }
+
   res.json({ token });
+};
+
+export const signOut = async (req: Request, res: Response) => {
+  const { error } = await supabaseClient(req.token!)
+    .from("sessions")
+    .delete()
+    .eq("id", req.jti!);
+
+  if (error) {
+    res.status(500).json({ error: "Failed to sign out" });
+    return;
+  }
+
+  res.status(204).send();
 };
