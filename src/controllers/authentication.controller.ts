@@ -4,6 +4,7 @@ import { z } from "zod";
 import { verifySignature } from "thirdweb/auth";
 import { sepolia } from "thirdweb/chains";
 import { thirdwebClient } from "../libs/thirdweb";
+import { supabaseClient } from "../libs/supabase";
 import { SIGNATURE_EXPIRY_SECONDS } from "../constants";
 
 const signInSchema = z.object({
@@ -11,6 +12,14 @@ const signInSchema = z.object({
   message: z.string().min(1),
   signature: z.string().min(1),
 });
+
+const isSignatureExpired = (message: string) => {
+  const match = message.match(/deadline:(\d+)/);
+  const deadline = match ? parseInt(match[1], 10) : 0;
+  const now = Math.floor(Date.now() / 1000);
+  const isExpired = now > deadline || deadline - now > SIGNATURE_EXPIRY_SECONDS;
+  return isExpired;
+};
 
 export const signIn = async (req: Request, res: Response) => {
   const result = signInSchema.safeParse(req.body);
@@ -28,11 +37,7 @@ export const signIn = async (req: Request, res: Response) => {
     chain: sepolia,
   });
 
-  const match = message.match(/deadline:(\d+)/);
-  const deadline = match ? parseInt(match[1], 10) : 0;
-  const now = Math.floor(Date.now() / 1000);
-  const isExpired = now > deadline || deadline - now > SIGNATURE_EXPIRY_SECONDS;
-  if (!isValidSignature || isExpired) {
+  if (!isValidSignature || isSignatureExpired(message)) {
     res.status(401).json({ error: "Invalid signature" });
     return;
   }
@@ -42,5 +47,15 @@ export const signIn = async (req: Request, res: Response) => {
     process.env.SUPABASE_JWT_SECRET!,
     { expiresIn: "7d" },
   );
+
+  const { error } = await supabaseClient(token)
+    .from("users")
+    .upsert({ id: wallet }, { onConflict: "id" });
+
+  if (error) {
+    res.status(500).json({ error: "Failed to create user" });
+    return;
+  }
+
   res.json({ token });
 };
