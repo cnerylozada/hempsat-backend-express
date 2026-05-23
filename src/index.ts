@@ -1,6 +1,12 @@
+import "dotenv/config";
 import app from "./app";
 
-const requiredEnvVars = ["JWT_SECRET", "THIRDWEB_SECRET_KEY"];
+const requiredEnvVars = [
+  "THIRDWEB_SECRET_KEY",
+  "SUPABASE_URL",
+  "SUPABASE_PUBLISHABLE_KEY",
+  "SUPABASE_JWT_SECRET",
+];
 for (const key of requiredEnvVars) {
   if (!process.env[key]) {
     console.error(`Missing required environment variable: ${key}`);

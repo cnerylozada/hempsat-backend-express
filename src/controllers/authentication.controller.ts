@@ -20,7 +20,7 @@ export const signIn = async (req: Request, res: Response) => {
 
   const { wallet, message, signature } = result.data;
 
-  const isValid = await verifySignature({
+  const isValidSignature = await verifySignature({
     message,
     signature,
     address: wallet,
@@ -28,14 +28,16 @@ export const signIn = async (req: Request, res: Response) => {
     chain: sepolia,
   });
 
-  if (!isValid) {
+  if (!isValidSignature) {
     res.status(401).json({ error: "Invalid signature" });
     return;
   }
 
-  const token = jwt.sign({ wallet }, process.env.JWT_SECRET!, {
-    expiresIn: "7d",
-  });
+  const token = jwt.sign(
+    { sub: wallet, role: "authenticated", aud: "authenticated" },
+    process.env.SUPABASE_JWT_SECRET!,
+    { expiresIn: "7d" },
+  );
 
   res.json({ token });
 };
