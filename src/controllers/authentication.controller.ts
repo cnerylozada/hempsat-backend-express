@@ -4,6 +4,7 @@ import { z } from "zod";
 import { verifySignature } from "thirdweb/auth";
 import { sepolia } from "thirdweb/chains";
 import { thirdwebClient } from "../libs/thirdweb";
+import { SIGNATURE_EXPIRY_SECONDS } from "../constants";
 
 const signInSchema = z.object({
   wallet: z.string().min(1),
@@ -19,7 +20,6 @@ export const signIn = async (req: Request, res: Response) => {
   }
 
   const { wallet, message, signature } = result.data;
-
   const isValidSignature = await verifySignature({
     message,
     signature,
@@ -28,7 +28,11 @@ export const signIn = async (req: Request, res: Response) => {
     chain: sepolia,
   });
 
-  if (!isValidSignature) {
+  const match = message.match(/deadline:(\d+)/);
+  const deadline = match ? parseInt(match[1], 10) : 0;
+  const now = Math.floor(Date.now() / 1000);
+  const isExpired = now > deadline || deadline - now > SIGNATURE_EXPIRY_SECONDS;
+  if (!isValidSignature || isExpired) {
     res.status(401).json({ error: "Invalid signature" });
     return;
   }
@@ -38,6 +42,5 @@ export const signIn = async (req: Request, res: Response) => {
     process.env.SUPABASE_JWT_SECRET!,
     { expiresIn: "7d" },
   );
-
   res.json({ token });
 };
