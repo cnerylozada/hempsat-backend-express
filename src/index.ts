@@ -6,6 +6,7 @@ const requiredEnvVars = [
   "SUPABASE_URL",
   "SUPABASE_PUBLISHABLE_KEY",
   "SUPABASE_JWT_SECRET",
+  "WITHPERSONA_API_KEY",
 ];
 for (const key of requiredEnvVars) {
   if (!process.env[key]) {
