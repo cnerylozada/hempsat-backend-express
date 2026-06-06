@@ -3,6 +3,9 @@ import { z } from "zod";
 import { extractTitleDeedData } from "../services/title-deed.service";
 import { supabaseClient } from "../libs/supabase";
 
+const normalizeName = (name: string) =>
+  name.toLowerCase().trim().split(/\s+/).sort().join(" ");
+
 const createFarmSchema = z.object({
   latitude: z.coerce.number().min(-90).max(90),
   longitude: z.coerce.number().min(-180).max(180),
@@ -26,7 +29,7 @@ export const createFarm = async (
 
     const { data: user, error: userError } = await supabaseClient(req.token!)
       .from("users")
-      .select("national_id")
+      .select("national_id, first_name, last_name")
       .eq("id", req.userId!)
       .single();
 
@@ -35,8 +38,8 @@ export const createFarm = async (
       return;
     }
 
-    if (!user.national_id) {
-      res.status(400).json({ error: "KYC not completed — no ID on record" });
+    if (!user.national_id || !user.first_name || !user.last_name) {
+      res.status(400).json({ error: "KYC not completed — identity data missing" });
       return;
     }
 
@@ -45,12 +48,20 @@ export const createFarm = async (
       return;
     }
 
+    if (deedData.country === "USA") {
+      const fullName = normalizeName(`${user.first_name} ${user.last_name}`);
+      const deedName = normalizeName(deedData.owner_name ?? "");
+      if (fullName !== deedName) {
+        res.status(400).json({ error: "Name on title deed does not match your verified identity" });
+        return;
+      }
+    }
+
     const { error: insertError } = await supabaseClient(req.token!)
       .from("farms")
       .insert({
         user_id: req.userId!,
         country: deedData.country!,
-        owner_name: deedData.owner_name!,
         location: deedData.location!,
         parcel_id: deedData.parcel_id,
         area: deedData.area,
