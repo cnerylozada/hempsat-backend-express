@@ -5,6 +5,6 @@ import { titleDeedUploadMiddleware } from "../middlewares/title-deed.middleware"
 
 const router = Router();
 
-router.post("/farms/title-deeds", authMiddleware, titleDeedUploadMiddleware, createFarm);
+router.post("/farms", authMiddleware, titleDeedUploadMiddleware, createFarm);
 
 export default router;

@@ -97,27 +97,30 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
-          display_name: string | null
+          first_name: string | null
           id: string
           inquiry_id: string | null
+          last_name: string | null
           national_id: string | null
           updated_at: string
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
-          display_name?: string | null
+          first_name?: string | null
           id: string
           inquiry_id?: string | null
+          last_name?: string | null
           national_id?: string | null
           updated_at?: string
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
-          display_name?: string | null
+          first_name?: string | null
           id?: string
           inquiry_id?: string | null
+          last_name?: string | null
           national_id?: string | null
           updated_at?: string
         }

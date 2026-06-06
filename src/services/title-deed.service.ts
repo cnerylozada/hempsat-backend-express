@@ -4,7 +4,7 @@ const MODEL = "gemini-2.5-flash";
 const MAX_TOKENS = 1024;
 
 export interface TitleDeedData {
-  country: "Peru" | "USA" | null;
+  country: "PE" | "USA" | null;
   owner_name: string | null;
   owner_id: string | null;
   location: string | null;
@@ -30,7 +30,7 @@ Extract information accurately regardless of language or format. Return null for
 
 Extract the following fields and return as JSON only, no explanation:
 {
-  "country": "country of the title deed — must be exactly 'Peru' or 'USA', null if cannot be determined",
+  "country": "country of the title deed — must be exactly 'PE' for Peru or 'USA' for United States, null if cannot be determined",
   "owner_name": "full legal name of the registered owner (Titular in Peru, Grantee in USA)",
   "owner_id": "owner national ID number — DNI or RUC for Peru; null for USA as deeds do not include personal ID numbers",
   "location": "full property location — district, province and region for Peru; county and state for USA",
