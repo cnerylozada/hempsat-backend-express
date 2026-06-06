@@ -7,6 +7,7 @@ declare global {
     interface Request {
       token?: string;
       jti?: string;
+      userId?: string;
     }
   }
 }
@@ -46,6 +47,7 @@ export const authMiddleware = async (
 
     req.token = token;
     req.jti = decoded.jti;
+    req.userId = decoded.sub;
     next();
   } catch {
     res.status(401).json({ error: "Invalid token" });
