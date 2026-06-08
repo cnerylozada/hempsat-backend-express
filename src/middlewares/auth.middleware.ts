@@ -29,19 +29,21 @@ export const authMiddleware = async (
       process.env.SUPABASE_JWT_SECRET!,
     ) as jwt.JwtPayload;
 
-    if (!decoded.jti) {
+    if (!decoded.sub || !decoded.jti) {
       res.status(401).json({ error: "Invalid token" });
       return;
     }
 
-    const { data } = await supabaseClient(token)
+    const { data, error } = await supabaseClient(token)
       .from("sessions")
       .select("id")
       .eq("id", decoded.jti)
       .single();
 
-    if (!data) {
-      res.status(401).json({ error: "Session expired" });
+    if (!data || error) {
+      res.status(401).json({
+        error: `Error fetching sessions`,
+      });
       return;
     }
 
@@ -49,7 +51,9 @@ export const authMiddleware = async (
     req.jti = decoded.jti;
     req.userId = decoded.sub;
     next();
-  } catch {
-    res.status(401).json({ error: "Invalid token" });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Something went wrong";
+    res.status(401).json({ error: message });
   }
 };

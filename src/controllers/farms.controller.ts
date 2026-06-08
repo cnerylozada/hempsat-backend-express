@@ -17,7 +17,11 @@ export const createFarm = async (
 ): Promise<void> => {
   const result = createFarmSchema.safeParse(req.body);
   if (!result.success) {
-    res.status(400).json({ errors: result.error.flatten(issue => issue.message).fieldErrors });
+    res
+      .status(400)
+      .json({
+        errors: result.error.flatten((issue) => issue.message).fieldErrors,
+      });
     return;
   }
 
@@ -39,12 +43,18 @@ export const createFarm = async (
     }
 
     if (!user.national_id || !user.first_name || !user.last_name) {
-      res.status(400).json({ error: "KYC not completed — identity data missing" });
+      res
+        .status(400)
+        .json({ error: "KYC not completed — identity data missing" });
       return;
     }
 
     if (deedData.country === "PE" && user.national_id !== deedData.owner_id) {
-      res.status(400).json({ error: "ID card on title deed does not match your verified identity" });
+      res
+        .status(400)
+        .json({
+          error: "ID card on title deed does not match your verified identity",
+        });
       return;
     }
 
@@ -52,7 +62,11 @@ export const createFarm = async (
       const fullName = normalizeName(`${user.first_name} ${user.last_name}`);
       const deedName = normalizeName(deedData.owner_name ?? "");
       if (fullName !== deedName) {
-        res.status(400).json({ error: "Name on title deed does not match your verified identity" });
+        res
+          .status(400)
+          .json({
+            error: "Name on title deed does not match your verified identity",
+          });
         return;
       }
     }
@@ -79,12 +93,9 @@ export const createFarm = async (
     }
 
     res.status(201).json({ message: "Farm created successfully" });
-  } catch (err) {
-    if (err instanceof Error && err.message.includes("valid title deed")) {
-      res.status(400).json({ error: err.message });
-      return;
-    }
-    console.error("create farm error:", err);
-    res.status(500).json({ error: "Failed to create farm" });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Something went wrong";
+    res.status(500).json({ error: message });
   }
 };
