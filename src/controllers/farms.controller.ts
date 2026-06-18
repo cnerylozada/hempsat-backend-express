@@ -11,17 +11,38 @@ const createFarmSchema = z.object({
   longitude: z.coerce.number().min(-180).max(180),
 });
 
+export const getMyFarms = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { data: farms, error } = await supabaseClient(req.token!)
+      .from("farms")
+      .select("*")
+      .eq("user_id", req.userId!);
+
+    if (error) {
+      res.status(500).json({ error: "Failed to fetch farms" });
+      return;
+    }
+
+    res.json(farms);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Something went wrong";
+    res.status(500).json({ error: message });
+  }
+};
+
 export const createFarm = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
   const result = createFarmSchema.safeParse(req.body);
   if (!result.success) {
-    res
-      .status(400)
-      .json({
-        errors: result.error.flatten((issue) => issue.message).fieldErrors,
-      });
+    res.status(400).json({
+      errors: result.error.flatten((issue) => issue.message).fieldErrors,
+    });
     return;
   }
 
@@ -38,7 +59,7 @@ export const createFarm = async (
       .single();
 
     if (userError || !user) {
-      res.status(500).json({ error: "Failed to retrieve user data" });
+      res.status(400).json({ error: "Error fetching users" });
       return;
     }
 
@@ -50,11 +71,9 @@ export const createFarm = async (
     }
 
     if (deedData.country === "PE" && user.national_id !== deedData.owner_id) {
-      res
-        .status(400)
-        .json({
-          error: "ID card on title deed does not match your verified identity",
-        });
+      res.status(400).json({
+        error: "ID card on title deed does not match your verified identity",
+      });
       return;
     }
 
@@ -62,11 +81,9 @@ export const createFarm = async (
       const fullName = normalizeName(`${user.first_name} ${user.last_name}`);
       const deedName = normalizeName(deedData.owner_name ?? "");
       if (fullName !== deedName) {
-        res
-          .status(400)
-          .json({
-            error: "Name on title deed does not match your verified identity",
-          });
+        res.status(400).json({
+          error: "Name on title deed does not match your verified identity",
+        });
         return;
       }
     }

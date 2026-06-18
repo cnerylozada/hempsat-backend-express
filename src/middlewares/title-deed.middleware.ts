@@ -1,12 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 import multer from "multer";
 import sharp from "sharp";
-import { titleDeedUpload, MAX_FILES, TITLE_DEEDS_FIELD } from "../libs/multer";
+import { titleDeedUpload, MAX_FILES, TITLE_DEEDS_FIELD, MIN_FILE_SIZE_BYTES } from "../libs/multer";
 import {
   TITLE_DEED_MIN_SHORT_SIDE_PX,
   TITLE_DEED_MIN_LONG_SIDE_PX,
-  TITLE_DEED_MAX_SHORT_SIDE_PX,
-  TITLE_DEED_MAX_LONG_SIDE_PX,
 } from "../constants";
 
 const handleUploadError = (err: unknown, res: Response) => {
@@ -16,7 +14,7 @@ const handleUploadError = (err: unknown, res: Response) => {
       return;
     }
     if (err.code === "LIMIT_FILE_SIZE") {
-      res.status(400).json({ error: "Each image must be at most 10 MB" });
+      res.status(400).json({ error: "Each image must be at most 5 MB" });
       return;
     }
   }
@@ -34,9 +32,6 @@ const checkDimensions = async (files: Express.Multer.File[]): Promise<string | n
     const longSide = Math.max(width, height);
     if (shortSide < TITLE_DEED_MIN_SHORT_SIDE_PX || longSide < TITLE_DEED_MIN_LONG_SIDE_PX) {
       return `Each image must be at least ${TITLE_DEED_MIN_SHORT_SIDE_PX}×${TITLE_DEED_MIN_LONG_SIDE_PX}px (short side × long side)`;
-    }
-    if (shortSide > TITLE_DEED_MAX_SHORT_SIDE_PX || longSide > TITLE_DEED_MAX_LONG_SIDE_PX) {
-      return `Each image must be at most ${TITLE_DEED_MAX_SHORT_SIDE_PX}×${TITLE_DEED_MAX_LONG_SIDE_PX}px (short side × long side)`;
     }
   }
   return null;
@@ -57,6 +52,12 @@ export const titleDeedUploadMiddleware = (
 
     if (!files || files.length === 0) {
       res.status(400).json({ error: "At least 1 image is required" });
+      return;
+    }
+
+    const tooSmall = files.find((f) => f.size < MIN_FILE_SIZE_BYTES);
+    if (tooSmall) {
+      res.status(400).json({ error: `Each image must be at least ${MIN_FILE_SIZE_BYTES / 1024} KB` });
       return;
     }
 

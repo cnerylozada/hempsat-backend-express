@@ -1,7 +1,8 @@
 import multer from "multer";
 
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png"];
-const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+export const MIN_FILE_SIZE_BYTES = 50 * 1024;   // 50 KB
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;    // 5 MB
 export const MAX_FILES = 3;
 export const TITLE_DEEDS_FIELD = "images";
 

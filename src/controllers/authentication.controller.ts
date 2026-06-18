@@ -38,10 +38,10 @@ export const signIn = async (req: Request, res: Response) => {
     chain: sepolia,
   });
 
-  // if (!isValidSignature || isSignatureExpired(message)) {
-  //   res.status(401).json({ error: "Invalid signature" });
-  //   return;
-  // }
+  if (!isValidSignature || isSignatureExpired(message)) {
+    res.status(401).json({ error: "Invalid signature" });
+    return;
+  }
 
   const jti = randomUUID();
   const expiresAt = new Date(
