@@ -50,8 +50,6 @@ export const createFarm = async (
   const files = req.files as Express.Multer.File[];
 
   try {
-    const deedData = await extractTitleDeedData(files);
-
     const { data: user, error: userError } = await supabaseClient(req.token!)
       .from("users")
       .select("national_id, first_name, last_name")
@@ -69,6 +67,8 @@ export const createFarm = async (
         .json({ error: "KYC not completed — identity data missing" });
       return;
     }
+
+    const deedData = await extractTitleDeedData(files);
 
     if (deedData.country === "PE" && user.national_id !== deedData.owner_id) {
       res.status(400).json({
@@ -113,6 +113,7 @@ export const createFarm = async (
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Something went wrong";
+    console.log("message", message);
     res.status(500).json({ error: message });
   }
 };

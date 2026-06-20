@@ -32,7 +32,7 @@ Extract the following fields and return as JSON only, no explanation:
 {
   "country": "country of the title deed — must be exactly 'PE' for Peru or 'USA' for United States, null if cannot be determined",
   "owner_name": "full legal name of the registered owner (Titular in Peru, Grantee in USA)",
-  "owner_id": "owner national ID number — DNI or RUC for Peru; null for USA as deeds do not include personal ID numbers",
+  "owner_id": "owner national ID number, digits only with no label or prefix such as 'D.N.I.' — DNI or RUC for Peru; null for USA as deeds do not include personal ID numbers",
   "location": "full property location — district, province and region for Peru; county and state for USA",
   "parcel_id": "official parcel identifier — Partida Registral for Peru; APN (Assessor Parcel Number) or legal description parcel number for USA",
   "area": "total land area with unit — hectares or m² for Peru; acres for USA"
@@ -41,7 +41,10 @@ Extract the following fields and return as JSON only, no explanation:
   const response = await geminiClient.models.generateContent({
     model: MODEL,
     contents: [{ role: "user", parts: [...imageParts, { text: prompt }] }],
-    config: { maxOutputTokens: MAX_TOKENS },
+    config: {
+      maxOutputTokens: MAX_TOKENS,
+      thinkingConfig: { thinkingBudget: 0 },
+    },
   });
 
   const raw = response.text ?? "{}";
@@ -50,6 +53,10 @@ Extract the following fields and return as JSON only, no explanation:
 
   if (!data.country || !data.owner_name || !data.location) {
     throw new Error("The uploaded images do not appear to be a valid title deed");
+  }
+
+  if (data.owner_id) {
+    data.owner_id = data.owner_id.replace(/\D/g, "") || null;
   }
 
   return data;
