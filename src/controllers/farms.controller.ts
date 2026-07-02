@@ -11,6 +11,32 @@ const createFarmSchema = z.object({
   longitude: z.coerce.number().min(-180).max(180),
 });
 
+export const getFarmById = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+
+    const { data: farm, error } = await supabaseClient(req.token!)
+      .from("farms")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error || !farm) {
+      res.status(404).json({ error: "Farm not found" });
+      return;
+    }
+
+    res.json(farm);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Something went wrong";
+    res.status(500).json({ error: message });
+  }
+};
+
 export const getMyFarms = async (
   req: Request,
   res: Response,

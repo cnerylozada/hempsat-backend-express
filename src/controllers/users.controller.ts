@@ -25,7 +25,6 @@ export const updateUserIdentity = async (
       res.status(404).json({ error: "Inquiry not found" });
       return;
     }
-    console.log("kycData", kycData);
 
     const { error, count } = await supabaseClient(req.token!)
       .from("users")
