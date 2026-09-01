@@ -44,10 +44,6 @@ export const signIn = async (req: Request, res: Response) => {
   }
 
   const jti = randomUUID();
-  const expiresAt = new Date(
-    Date.now() + TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000,
-  );
-
   const token = jwt.sign(
     { sub: wallet, jti },
     process.env.SUPABASE_JWT_SECRET!,
@@ -63,6 +59,17 @@ export const signIn = async (req: Request, res: Response) => {
     return;
   }
 
+  const { error: purgeError } = await supabaseClient(token)
+    .from("sessions")
+    .delete()
+    .eq("user_id", wallet)
+    .lt("expires_at", new Date().toISOString());
+
+  if (purgeError) console.error("Failed to purge expired sessions", purgeError);
+
+  const expiresAt = new Date(
+    Date.now() + TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000,
+  );
   const { error: sessionError } = await supabaseClient(token)
     .from("sessions")
     .insert({ id: jti, user_id: wallet, expires_at: expiresAt.toISOString() });

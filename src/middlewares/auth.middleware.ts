@@ -52,6 +52,10 @@ export const authMiddleware = async (
     req.userId = decoded.sub;
     next();
   } catch (error) {
+    if (error instanceof jwt.TokenExpiredError) {
+      res.status(401).json({ error: error.message, code: "TOKEN_EXPIRED" });
+      return;
+    }
     const message =
       error instanceof Error ? error.message : "Something went wrong";
     res.status(401).json({ error: message });
