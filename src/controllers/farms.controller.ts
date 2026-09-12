@@ -1,14 +1,28 @@
 import { Request, Response } from "express";
 import { z } from "zod";
-import { extractTitleDeedData } from "../services/title-deed.service";
+import {
+  extractTitleDeedData,
+  TitleDeedData,
+} from "../services/title-deed.service";
 import { supabaseClient } from "../libs/supabase";
 
 const normalizeName = (name: string) =>
   name.toLowerCase().trim().split(/\s+/).sort().join(" ");
 
 const createFarmSchema = z.object({
-  latitude: z.coerce.number().min(-90).max(90),
-  longitude: z.coerce.number().min(-180).max(180),
+  name: z.string({ message: "Farm name is required" }),
+  // multipart/form-data sends every field as a string, so boundaries arrives as JSON text
+  boundaries: z.preprocess(
+    (value) => (typeof value === "string" ? JSON.parse(value) : value),
+    z
+      .array(
+        z.object({
+          latitude: z.number().min(-90).max(90),
+          longitude: z.number().min(-180).max(180),
+        }),
+      )
+      .min(3),
+  ),
 });
 
 export const getFarmById = async (
@@ -67,12 +81,12 @@ export const createFarm = async (
   const result = createFarmSchema.safeParse(req.body);
   if (!result.success) {
     res.status(400).json({
-      errors: result.error.flatten((issue) => issue.message).fieldErrors,
+      error: result.error.flatten((issue) => issue.message).fieldErrors,
     });
     return;
   }
 
-  const { latitude, longitude } = result.data;
+  const { name, boundaries } = result.data;
   const files = req.files as Express.Multer.File[];
 
   try {
@@ -117,13 +131,13 @@ export const createFarm = async (
     const { error: insertError } = await supabaseClient(req.token!)
       .from("farms")
       .insert({
+        name,
         user_id: req.userId!,
         country: deedData.country!,
-        location: deedData.location!,
+        address: deedData.location!,
         parcel_id: deedData.parcel_id,
         area: deedData.area,
-        latitude,
-        longitude,
+        boundaries,
       });
 
     if (insertError) {
@@ -139,7 +153,6 @@ export const createFarm = async (
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Something went wrong";
-    console.log("message", message);
     res.status(500).json({ error: message });
   }
 };

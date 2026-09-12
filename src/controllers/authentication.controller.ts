@@ -25,7 +25,7 @@ const isSignatureExpired = (message: string) => {
 export const signIn = async (req: Request, res: Response) => {
   const result = signInSchema.safeParse(req.body);
   if (!result.success) {
-    res.status(400).json({ errors: result.error.flatten().fieldErrors });
+    res.status(400).json({ error: result.error.flatten().fieldErrors });
     return;
   }
 
