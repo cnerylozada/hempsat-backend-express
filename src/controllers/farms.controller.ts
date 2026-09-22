@@ -10,7 +10,7 @@ const normalizeName = (name: string) =>
   name.toLowerCase().trim().split(/\s+/).sort().join(" ");
 
 const createFarmSchema = z.object({
-  name: z.string({ message: "Farm name is required" }),
+  name: z.string().min(20),
   // multipart/form-data sends every field as a string, so boundaries arrives as JSON text
   boundaries: z.preprocess(
     (value) => (typeof value === "string" ? JSON.parse(value) : value),
@@ -92,7 +92,7 @@ export const createFarm = async (
   try {
     const { data: user, error: userError } = await supabaseClient(req.token!)
       .from("users")
-      .select("national_id, first_name, last_name")
+      .select("inquiry_id, national_id, first_name, last_name")
       .eq("id", req.userId!)
       .single();
 
@@ -101,7 +101,7 @@ export const createFarm = async (
       return;
     }
 
-    if (!user.national_id || !user.first_name || !user.last_name) {
+    if (!user.inquiry_id) {
       res
         .status(400)
         .json({ error: "KYC not completed — identity data missing" });

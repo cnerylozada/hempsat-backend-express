@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      areas: {
+        Row: {
+          boundaries: Json | null
+          created_at: string
+          description: string
+          farm_id: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          boundaries?: Json | null
+          created_at?: string
+          description: string
+          farm_id: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          boundaries?: Json | null
+          created_at?: string
+          description?: string
+          farm_id?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "areas_farm_id_fkey"
+            columns: ["farm_id"]
+            isOneToOne: false
+            referencedRelation: "farms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       farms: {
         Row: {
           address: string
