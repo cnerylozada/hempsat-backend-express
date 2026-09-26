@@ -1,28 +1,15 @@
 import { Request, Response } from "express";
 import { z } from "zod";
-import {
-  extractTitleDeedData,
-  TitleDeedData,
-} from "../services/title-deed.service";
+import { extractTitleDeedData } from "../services/title-deed.service";
 import { supabaseClient } from "../libs/supabase";
+import { boundariesSchema } from "./utils";
 
 const normalizeName = (name: string) =>
   name.toLowerCase().trim().split(/\s+/).sort().join(" ");
 
 const createFarmSchema = z.object({
   name: z.string().min(20),
-  // multipart/form-data sends every field as a string, so boundaries arrives as JSON text
-  boundaries: z.preprocess(
-    (value) => (typeof value === "string" ? JSON.parse(value) : value),
-    z
-      .array(
-        z.object({
-          latitude: z.number().min(-90).max(90),
-          longitude: z.number().min(-180).max(180),
-        }),
-      )
-      .min(3),
-  ),
+  boundaries: boundariesSchema,
 });
 
 export const getFarmById = async (

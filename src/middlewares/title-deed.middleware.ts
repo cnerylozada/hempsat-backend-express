@@ -2,10 +2,9 @@ import { Request, Response, NextFunction } from "express";
 import multer from "multer";
 import sharp from "sharp";
 import { titleDeedUpload, MAX_FILES, TITLE_DEEDS_FIELD, MIN_FILE_SIZE_BYTES } from "../libs/multer";
-import {
-  TITLE_DEED_MIN_SHORT_SIDE_PX,
-  TITLE_DEED_MIN_LONG_SIDE_PX,
-} from "../constants";
+
+const TITLE_DEED_MIN_SHORT_SIDE_PX = 600;
+const TITLE_DEED_MIN_LONG_SIDE_PX = 900;
 
 const handleUploadError = (err: unknown, res: Response) => {
   if (err instanceof multer.MulterError) {

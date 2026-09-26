@@ -1,5 +1,9 @@
 import { Router } from "express";
-import { createFarm, getFarmById, getMyFarms } from "../controllers/farms.controller";
+import {
+  createFarm,
+  getFarmById,
+  getMyFarms,
+} from "../controllers/farms.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
 import { titleDeedUploadMiddleware } from "../middlewares/title-deed.middleware";
 
