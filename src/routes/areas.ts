@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   addNewAreaInFarm,
+  getAreaById,
   getAreasByFarmId,
 } from "../controllers/areas/areas.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
@@ -15,5 +16,6 @@ router.post(
   areaPhotosUpload,
   addNewAreaInFarm,
 );
+router.get("/areas/:farmId/:areaId", authMiddleware, getAreaById);
 
 export default router;

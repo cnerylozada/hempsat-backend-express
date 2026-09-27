@@ -20,7 +20,7 @@ Express app with TypeScript 6, using `tsx` (not `ts-node`) as the runtime.
 
 All routes are prefixed with `API_PREFIX` (`/api/v1`) defined in `src/constants.ts`. New routers are mounted in `app.ts` as `app.use(API_PREFIX, someRoutes)`, and each router file owns its specific sub-path (e.g. `router.get("/health", ...)`).
 
-**Convention:** one controller file per domain (`src/controllers/<domain>.controller.ts`), one router file per domain (`src/routes/<domain>.ts`). Controllers handle request/response logic; routers wire paths to controllers.
+**Convention:** one controller file per domain (`src/controllers/<domain>.controller.ts`), one router file per domain (`src/routes/<domain>.ts`). Controllers handle request/response logic; routers wire paths to controllers. A domain with several files can use a subfolder (`src/controllers/areas/` holds the controller and its zod `schemas.ts`); helpers shared across controllers live in `src/controllers/utils.ts`.
 
 ## API Endpoints
 
@@ -41,7 +41,14 @@ All routes are prefixed with `API_PREFIX` (`/api/v1`) defined in `src/constants.
 |--------|------|------|-------------|
 | GET | `/farms` | Yes | List own farms |
 | GET | `/farms/:id` | Yes | Get single farm by id (own only via RLS) |
-| POST | `/farms` | Yes | Create farm — multipart/form-data: `images` (1–3 files) + `latitude` + `longitude` |
+| POST | `/farms` | Yes | Create farm — multipart/form-data: `images` (1–3 title deed files) + `name` + `boundaries` (JSON string, ≥ 3 `{ latitude, longitude }` points) |
+
+### Areas — `src/routes/areas.ts`
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/areas/:farmId` | Yes | List the areas of a farm |
+| GET | `/areas/:farmId/:areaId` | Yes | Get one area of a farm, plus `photos: string[]` (signed URLs) |
+| POST | `/areas/:farmId` | Yes | Add area — multipart/form-data: `images` (1–10 files) + `name`, `description`, `tillagePractice`, `currentCrop`, `monthsUnderPractice`, `boundaries` (JSON string, ≥ 3 points), `signature` |
 
 ### Health — `src/routes/health.ts`
 | Method | Path | Auth | Description |
@@ -73,7 +80,16 @@ All routes are prefixed with `API_PREFIX` (`/api/v1`) defined in `src/constants.
 
 **Unique constraints (not indexes):** `users.national_id`, `users.inquiry_id`, `farms.parcel_id` all use `ALTER TABLE ... ADD CONSTRAINT ... UNIQUE (...)` — not `CREATE UNIQUE INDEX`.
 
-**`latitude` / `longitude` in `createFarm`:** Accepted in the request body and validated (Zod coerce) but not persisted — reserved for a future GPS presence-verification feature (Haversine distance check, ≤ 20 m tolerance). Not stored in the farms table.
+**`boundaries` (farms and areas):** Stored as `jsonb` (array of `{ latitude, longitude }`, at least 3 points). Requests are `multipart/form-data`, so every field arrives as a string: `boundariesSchema` in `src/controllers/utils.ts` parses the JSON text before validating, and numeric fields such as `monthsUnderPractice` use `z.coerce`. Farms also keep `name` and `address` (the deed's location text).
+
+**Areas:** An area belongs to a farm via `farm_id`. Its RLS policies check ownership through the parent farm (`farms.user_id = auth.jwt() ->> 'sub'`). Baseline fields (`tillage_practice` enum, `current_crop`, `months_under_practice`, `attestation_signature`) are mandatory.
+
+**Area photos (Supabase Storage):**
+- Bucket `areas_baseline_photos` (private, JPG/PNG, 5 MB limit). Object path: `{userId}/{areaId}/{file.originalname}` — file names must be unique within an area (no upsert).
+- Upload: `areaPhotosUpload` in `src/libs/multer.ts` is used directly as route middleware (field `images`, max 10 files, 5 MB each, JPG/PNG). `addNewAreaInFarm` inserts the area first (to get its id), then uploads the photos.
+- Helpers in `src/libs/storage.ts`: `uploadFilesToFolder` (returns `true` if all uploads succeeded) and `getSignedUrlsInFolder` (lists a folder, returns an array of 1-hour signed URLs; throws on storage errors).
+- Storage RLS (migration `*_areas_baseline_photos_policies.sql`): INSERT/SELECT allowed only when the first folder of the path equals the JWT `sub`. Nothing is persisted in the `areas` table for photos — the folder is the link.
+- If the upload fails after the area insert, the area row stays without photos (no cleanup yet).
 
 ## Migrations
 

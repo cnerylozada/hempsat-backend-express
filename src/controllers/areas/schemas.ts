@@ -22,5 +22,5 @@ export const addNewAreaInFarmSchema = z.object({
   ]),
   monthsUnderPractice: z.coerce.number().int(),
   boundaries: boundariesSchema,
-  signature: z.string(),
+  attestationSignature: z.string(),
 });

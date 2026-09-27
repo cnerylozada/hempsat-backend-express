@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { supabaseClient } from "../../libs/supabase";
+import { getSignedUrlsInFolder, uploadFilesToFolder } from "../../libs/storage";
 import { addNewAreaInFarmSchema } from "./schemas";
 
 const AREAS_BASELINE_PHOTOS_BUCKET = "areas_baseline_photos";
@@ -29,6 +30,42 @@ export const getAreasByFarmId = async (
   }
 };
 
+export const getAreaById = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const farmId = req.params.farmId as string;
+    const areaId = req.params.areaId as string;
+
+    const supabase = supabaseClient(req.token!);
+
+    const { data: area, error } = await supabase
+      .from("areas")
+      .select("*")
+      .eq("farm_id", farmId)
+      .eq("id", areaId)
+      .single();
+
+    if (error || !area) {
+      res.status(404).json({ error: "Area not found" });
+      return;
+    }
+
+    const photos = await getSignedUrlsInFolder(
+      supabase,
+      AREAS_BASELINE_PHOTOS_BUCKET,
+      `${req.userId}/${areaId}`,
+    );
+
+    res.json({ ...area, photos });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Something went wrong";
+    res.status(500).json({ error: message });
+  }
+};
+
 export const addNewAreaInFarm = async (
   req: Request,
   res: Response,
@@ -49,7 +86,7 @@ export const addNewAreaInFarm = async (
     description,
     tillagePractice,
     currentCrop,
-    signature,
+    attestationSignature,
     monthsUnderPractice,
   } = result.data;
   const files = req.files as Express.Multer.File[] | undefined;
@@ -61,37 +98,34 @@ export const addNewAreaInFarm = async (
   try {
     const supabase = supabaseClient(req.token!);
 
-    const photoPaths = files.map(
-      (file) => `${req.userId}/${file.originalname}`,
-    );
-    const uploads = await Promise.all(
-      files.map((file, index) =>
-        supabase.storage
-          .from(AREAS_BASELINE_PHOTOS_BUCKET)
-          .upload(photoPaths[index], file.buffer, {
-            contentType: file.mimetype,
-          }),
-      ),
-    );
-    const uploadError = uploads.find(({ error }) => error)?.error;
-    if (uploadError) {
-      res.status(500).json({ error: uploadError.message });
-      return;
-    }
-
-    const { error: insertError } = await supabase.from("areas").insert({
-      name,
-      boundaries,
-      description,
-      farm_id: farmId,
-      tillage_practice: tillagePractice,
-      current_crop: currentCrop,
-      attestation_signature: signature,
-      months_under_practice: monthsUnderPractice,
-    });
+    const { data: area, error: insertError } = await supabase
+      .from("areas")
+      .insert({
+        name,
+        boundaries,
+        description,
+        farm_id: farmId,
+        tillage_practice: tillagePractice,
+        current_crop: currentCrop,
+        attestation_signature: attestationSignature,
+        months_under_practice: monthsUnderPractice,
+      })
+      .select("id")
+      .single();
 
     if (insertError) {
       res.status(500).json({ error: "Failed to add area" });
+      return;
+    }
+
+    const photosUploaded = await uploadFilesToFolder(
+      supabase,
+      AREAS_BASELINE_PHOTOS_BUCKET,
+      `${req.userId}/${area.id}`,
+      files,
+    );
+    if (!photosUploaded) {
+      res.status(500).json({ error: "Failed to upload area photos" });
       return;
     }
 
