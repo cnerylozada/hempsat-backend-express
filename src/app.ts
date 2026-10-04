@@ -5,6 +5,7 @@ import authRoutes from "./routes/authentication";
 import farmRoutes from "./routes/farms";
 import userRoutes from "./routes/users";
 import areasRoutes from "./routes/areas";
+import practicesRoutes from "./routes/practices";
 
 const app = express();
 
@@ -15,5 +16,6 @@ app.use(API_PREFIX, authRoutes);
 app.use(API_PREFIX, farmRoutes);
 app.use(API_PREFIX, userRoutes);
 app.use(API_PREFIX, areasRoutes);
+app.use(API_PREFIX, practicesRoutes);
 
 export default app;

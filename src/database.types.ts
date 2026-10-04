@@ -111,6 +111,170 @@ export type Database = {
           },
         ]
       }
+      mulching_practices: {
+        Row: {
+          amount: number
+          applied_on: string
+          coverage: Database["public"]["Enums"]["coverage_level"]
+          id: string
+          material: Database["public"]["Enums"]["mulch_material"]
+          material_other: string | null
+          material_state: Database["public"]["Enums"]["material_state"]
+          practice_id: string
+          practice_type: Database["public"]["Enums"]["practice_type"]
+          source: Database["public"]["Enums"]["input_source"]
+          source_description: string | null
+          unit: Database["public"]["Enums"]["mass_unit"]
+        }
+        Insert: {
+          amount: number
+          applied_on: string
+          coverage: Database["public"]["Enums"]["coverage_level"]
+          id?: string
+          material: Database["public"]["Enums"]["mulch_material"]
+          material_other?: string | null
+          material_state: Database["public"]["Enums"]["material_state"]
+          practice_id: string
+          practice_type?: Database["public"]["Enums"]["practice_type"]
+          source: Database["public"]["Enums"]["input_source"]
+          source_description?: string | null
+          unit: Database["public"]["Enums"]["mass_unit"]
+        }
+        Update: {
+          amount?: number
+          applied_on?: string
+          coverage?: Database["public"]["Enums"]["coverage_level"]
+          id?: string
+          material?: Database["public"]["Enums"]["mulch_material"]
+          material_other?: string | null
+          material_state?: Database["public"]["Enums"]["material_state"]
+          practice_id?: string
+          practice_type?: Database["public"]["Enums"]["practice_type"]
+          source?: Database["public"]["Enums"]["input_source"]
+          source_description?: string | null
+          unit?: Database["public"]["Enums"]["mass_unit"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mulching_practices_practice_id_practice_type_fkey"
+            columns: ["practice_id", "practice_type"]
+            isOneToOne: false
+            referencedRelation: "practices"
+            referencedColumns: ["id", "type"]
+          },
+        ]
+      }
+      practices: {
+        Row: {
+          area_id: string
+          attestation_signature: string
+          burn_area: Database["public"]["Enums"]["coverage_level"] | null
+          burn_material:
+            | Database["public"]["Enums"]["burn_material_kind"]
+            | null
+          burned: boolean
+          compost_manure_kg: number | null
+          compost_manure_type:
+            | Database["public"]["Enums"]["compost_manure_kind"]
+            | null
+          compost_or_manure_used: boolean
+          created_at: string
+          crop: string
+          fertilizer_kg: number | null
+          fertilizer_other: string | null
+          fertilizer_type: Database["public"]["Enums"]["fertilizer_kind"] | null
+          fertilizer_used: boolean
+          finished_at: string | null
+          id: string
+          photos: string[]
+          planted_at: string | null
+          started_at: string
+          tillage_area: Database["public"]["Enums"]["coverage_level"] | null
+          tillage_class: Database["public"]["Enums"]["tillage_practice"]
+          tillage_times: number | null
+          tillage_tool: Database["public"]["Enums"]["tillage_tool"] | null
+          tilled: boolean
+          type: Database["public"]["Enums"]["practice_type"]
+          updated_at: string
+        }
+        Insert: {
+          area_id: string
+          attestation_signature: string
+          burn_area?: Database["public"]["Enums"]["coverage_level"] | null
+          burn_material?:
+            | Database["public"]["Enums"]["burn_material_kind"]
+            | null
+          burned: boolean
+          compost_manure_kg?: number | null
+          compost_manure_type?:
+            | Database["public"]["Enums"]["compost_manure_kind"]
+            | null
+          compost_or_manure_used: boolean
+          created_at?: string
+          crop: string
+          fertilizer_kg?: number | null
+          fertilizer_other?: string | null
+          fertilizer_type?:
+            | Database["public"]["Enums"]["fertilizer_kind"]
+            | null
+          fertilizer_used: boolean
+          finished_at?: string | null
+          id?: string
+          photos?: string[]
+          planted_at?: string | null
+          started_at: string
+          tillage_area?: Database["public"]["Enums"]["coverage_level"] | null
+          tillage_class: Database["public"]["Enums"]["tillage_practice"]
+          tillage_times?: number | null
+          tillage_tool?: Database["public"]["Enums"]["tillage_tool"] | null
+          tilled: boolean
+          type: Database["public"]["Enums"]["practice_type"]
+          updated_at?: string
+        }
+        Update: {
+          area_id?: string
+          attestation_signature?: string
+          burn_area?: Database["public"]["Enums"]["coverage_level"] | null
+          burn_material?:
+            | Database["public"]["Enums"]["burn_material_kind"]
+            | null
+          burned?: boolean
+          compost_manure_kg?: number | null
+          compost_manure_type?:
+            | Database["public"]["Enums"]["compost_manure_kind"]
+            | null
+          compost_or_manure_used?: boolean
+          created_at?: string
+          crop?: string
+          fertilizer_kg?: number | null
+          fertilizer_other?: string | null
+          fertilizer_type?:
+            | Database["public"]["Enums"]["fertilizer_kind"]
+            | null
+          fertilizer_used?: boolean
+          finished_at?: string | null
+          id?: string
+          photos?: string[]
+          planted_at?: string | null
+          started_at?: string
+          tillage_area?: Database["public"]["Enums"]["coverage_level"] | null
+          tillage_class?: Database["public"]["Enums"]["tillage_practice"]
+          tillage_times?: number | null
+          tillage_tool?: Database["public"]["Enums"]["tillage_tool"] | null
+          tilled?: boolean
+          type?: Database["public"]["Enums"]["practice_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practices_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sessions: {
         Row: {
           created_at: string
@@ -181,7 +345,21 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      burn_material_kind: "crop_residue" | "weeds_or_brush" | "other"
+      compost_manure_kind: "compost" | "manure"
+      coverage_level: "all" | "about_half" | "small_part"
+      fertilizer_kind: "urea" | "npk" | "other"
+      input_source: "this_farm" | "brought_in"
+      mass_unit: "kg" | "t" | "other"
+      material_state: "fresh_green" | "dry"
+      mulch_material:
+        | "crop_residue"
+        | "straw_or_hay"
+        | "leaves_and_cuttings"
+        | "other"
+      practice_type: "mulching" | "organic_amendments" | "cover_crops"
       tillage_practice: "conventional" | "reduced" | "no_till" | "native_fallow"
+      tillage_tool: "hand_hoe" | "animal_plow" | "tractor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -309,7 +487,22 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      burn_material_kind: ["crop_residue", "weeds_or_brush", "other"],
+      compost_manure_kind: ["compost", "manure"],
+      coverage_level: ["all", "about_half", "small_part"],
+      fertilizer_kind: ["urea", "npk", "other"],
+      input_source: ["this_farm", "brought_in"],
+      mass_unit: ["kg", "t", "other"],
+      material_state: ["fresh_green", "dry"],
+      mulch_material: [
+        "crop_residue",
+        "straw_or_hay",
+        "leaves_and_cuttings",
+        "other",
+      ],
+      practice_type: ["mulching", "organic_amendments", "cover_crops"],
       tillage_practice: ["conventional", "reduced", "no_till", "native_fallow"],
+      tillage_tool: ["hand_hoe", "animal_plow", "tractor"],
     },
   },
 } as const
