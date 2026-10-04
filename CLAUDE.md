@@ -50,6 +50,13 @@ All routes are prefixed with `API_PREFIX` (`/api/v1`) defined in `src/constants.
 | GET | `/areas/:farmId/:areaId` | Yes | Get one area of a farm, plus `photos: string[]` (signed URLs) |
 | POST | `/areas/:farmId` | Yes | Add area — multipart/form-data: `images` (1–10 files) + `name`, `description`, `tillagePractice`, `currentCrop`, `monthsUnderPractice`, `boundaries` (JSON string, ≥ 3 points), `signature` |
 
+### Practices — `src/routes/practices.ts`
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/practices/:areaId` | Yes | List practices of an area (card fields: `id`, `type`, `crop`, `started_at`, `finished_at`, `tillage_class`) |
+| GET | `/practices/:areaId/:practiceId` | Yes | Practice detail: full `practices` row + `details` (child row matching `type`) + `photos: string[]` (signed URLs from `practices_photos/{userId}/{practiceId}`) |
+| POST | `/practices/:areaId/mulching` | Yes | Start a mulching practice — multipart/form-data: `images` (1–10) + step fields (`crop`, `plantedAt?`, `appliedOn`, `material`, `materialState`, `source`, `amount`, `unit`, `coverage`, optional JSON sub-forms `tillage`/`fertilizer`/`burning`/`compostOrManure`, `attestationSignature`). Inserts `practices` + `mulching_practices` atomically via the `create_mulching_practice` DB function; 409 if the area already has an active practice |
+
 ### Health — `src/routes/health.ts`
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
@@ -86,7 +93,7 @@ All routes are prefixed with `API_PREFIX` (`/api/v1`) defined in `src/constants.
 
 **Area photos (Supabase Storage):**
 - Bucket `areas_baseline_photos` (private, JPG/PNG, 5 MB limit). Object path: `{userId}/{areaId}/{file.originalname}` — file names must be unique within an area (no upsert).
-- Upload: `areaPhotosUpload` in `src/libs/multer.ts` is used directly as route middleware (field `images`, max 10 files, 5 MB each, JPG/PNG). `addNewAreaInFarm` inserts the area first (to get its id), then uploads the photos.
+- Upload: `photosUpload` in `src/libs/multer.ts` (shared by areas and practices) is used directly as route middleware (field `images`, max 10 files, 5 MB each, JPG/PNG). `addNewAreaInFarm` inserts the area first (to get its id), then uploads the photos.
 - Helpers in `src/libs/storage.ts`: `uploadFilesToFolder` (returns `true` if all uploads succeeded) and `getSignedUrlsInFolder` (lists a folder, returns an array of 1-hour signed URLs; throws on storage errors).
 - Storage RLS (migration `*_areas_baseline_photos_policies.sql`): INSERT/SELECT allowed only when the first folder of the path equals the JWT `sub`. Nothing is persisted in the `areas` table for photos — the folder is the link.
 - If the upload fails after the area insert, the area row stays without photos (no cleanup yet).
@@ -109,6 +116,8 @@ HempSat helps farmers earn carbon credits (Verra-style methodology) for regenera
 - Only one active practice per area (`one_active_practice_per_area`: partial unique index on `area_id WHERE finished_at IS NULL`). `finished_at` is set atomically when the practice is closed.
 - Parent/child ("table-per-type"): `mulching_practices (practice_id, practice_type)` → composite FK to `practices (id, type)` (backed by `UNIQUE (id, type)`); `practice_type` is pinned to `'mulching'` by a CHECK, so a mulching row can't point at another type of practice.
 - Practices are signed once with a single `attestation_signature`; the record is not editable after signing.
+- `crop` (practices) and `current_crop` (areas) are `text` columns validated by the shared `cropSchema` in `src/controllers/utils.ts` (the frontend renders it as a select).
+- Practice photos live in the private `practices_photos` bucket (`{userId}/{practiceId}/…`); nothing is stored in the table. A practice has exactly one row in its type's child table (`practice_id` is unique there).
 - Date columns use the `_at` suffix (`planted_at`, `started_at`, `finished_at`) even though they are `date`.
 
 **`practices` baseline snapshot ("Did any of these happen?" — multi-select):** The farmer can check any combination (e.g. Plowed + Compost); each option has its own boolean plus a sub-form, and "None of these" clears the others. The DB enforces *checked ⟺ sub-form filled* with CHECK constraints:

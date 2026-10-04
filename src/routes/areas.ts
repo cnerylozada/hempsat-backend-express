@@ -5,7 +5,7 @@ import {
   getAreasByFarmId,
 } from "../controllers/areas/areas.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
-import { areaPhotosUpload } from "../libs/multer";
+import { photosUpload } from "../libs/multer";
 
 const router = Router();
 
@@ -13,7 +13,7 @@ router.get("/areas/:farmId", authMiddleware, getAreasByFarmId);
 router.post(
   "/areas/:farmId",
   authMiddleware,
-  areaPhotosUpload,
+  photosUpload,
   addNewAreaInFarm,
 );
 router.get("/areas/:farmId/:areaId", authMiddleware, getAreaById);

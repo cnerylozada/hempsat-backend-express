@@ -1,12 +1,12 @@
 import multer from "multer";
 
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png"];
-export const MIN_FILE_SIZE_BYTES = 50 * 1024;   // 50 KB
-const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;    // 5 MB
+export const MIN_FILE_SIZE_BYTES = 50 * 1024; // 50 KB
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 export const MAX_FILES = 3;
 export const TITLE_DEEDS_FIELD = "images";
-const MAX_AREA_PHOTOS = 10;
-const AREA_PHOTOS_FIELD = "images";
+const MAX_PHOTOS = 10;
+const PHOTOS_FIELD = "images";
 
 const imageFileFilter: multer.Options["fileFilter"] = (_req, file, cb) => {
   if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
@@ -22,8 +22,8 @@ export const titleDeedUpload = multer({
   fileFilter: imageFileFilter,
 });
 
-export const areaPhotosUpload = multer({
+export const photosUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_FILE_SIZE_BYTES, files: MAX_AREA_PHOTOS },
+  limits: { fileSize: MAX_FILE_SIZE_BYTES, files: MAX_PHOTOS },
   fileFilter: imageFileFilter,
-}).array(AREA_PHOTOS_FIELD, MAX_AREA_PHOTOS);
+}).array(PHOTOS_FIELD, MAX_PHOTOS);

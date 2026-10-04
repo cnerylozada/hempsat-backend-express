@@ -114,7 +114,6 @@ export type Database = {
       mulching_practices: {
         Row: {
           amount: number
-          applied_on: string
           coverage: Database["public"]["Enums"]["coverage_level"]
           id: string
           material: Database["public"]["Enums"]["mulch_material"]
@@ -128,7 +127,6 @@ export type Database = {
         }
         Insert: {
           amount: number
-          applied_on: string
           coverage: Database["public"]["Enums"]["coverage_level"]
           id?: string
           material: Database["public"]["Enums"]["mulch_material"]
@@ -142,7 +140,6 @@ export type Database = {
         }
         Update: {
           amount?: number
-          applied_on?: string
           coverage?: Database["public"]["Enums"]["coverage_level"]
           id?: string
           material?: Database["public"]["Enums"]["mulch_material"]
@@ -186,7 +183,6 @@ export type Database = {
           fertilizer_used: boolean
           finished_at: string | null
           id: string
-          photos: string[]
           planted_at: string | null
           started_at: string
           tillage_area: Database["public"]["Enums"]["coverage_level"] | null
@@ -220,7 +216,6 @@ export type Database = {
           fertilizer_used: boolean
           finished_at?: string | null
           id?: string
-          photos?: string[]
           planted_at?: string | null
           started_at: string
           tillage_area?: Database["public"]["Enums"]["coverage_level"] | null
@@ -254,7 +249,6 @@ export type Database = {
           fertilizer_used?: boolean
           finished_at?: string | null
           id?: string
-          photos?: string[]
           planted_at?: string | null
           started_at?: string
           tillage_area?: Database["public"]["Enums"]["coverage_level"] | null
@@ -342,7 +336,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_mulching_practice: {
+        Args: { p_mulching: Json; p_practice: Json }
+        Returns: string
+      }
     }
     Enums: {
       burn_material_kind: "crop_residue" | "weeds_or_brush" | "other"
