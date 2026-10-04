@@ -91,6 +91,40 @@ All routes are prefixed with `API_PREFIX` (`/api/v1`) defined in `src/constants.
 - Storage RLS (migration `*_areas_baseline_photos_policies.sql`): INSERT/SELECT allowed only when the first folder of the path equals the JWT `sub`. Nothing is persisted in the `areas` table for photos — the folder is the link.
 - If the upload fails after the area insert, the area row stays without photos (no cleanup yet).
 
+## Business Model: Carbon-Credit Practices
+
+HempSat helps farmers earn carbon credits (Verra-style methodology) for regenerative practices. Every field stored must be relevant to Verra's verification needs; zero/no-till is the highest-value, highest-scrutiny claim.
+
+**Entity split — each entity has one purpose:**
+| Entity | Purpose | Status |
+|--------|---------|--------|
+| `areas` | Registered land baseline (tillage, crop, months under practice, photos) | Implemented |
+| `practices` | Shared parent: the **baseline / "day zero"** of a practice on an area | Migration written, not applied |
+| `mulching_practices` | Child of `practices` with mulching-specific day-zero data | Migration written, not applied |
+| `mulching_check_ins`, `organic_amendment_check_ins` | **Monitoring** over time | Future |
+| `practice_closures` | **End** of a practice | Future |
+| `organic_amendments_practices`, `cover_crops_practices` | Other children of `practices` (`practice_type` enum already lists them) | Future |
+
+**Rules:**
+- Only one active practice per area (`one_active_practice_per_area`: partial unique index on `area_id WHERE finished_at IS NULL`). `finished_at` is set atomically when the practice is closed.
+- Parent/child ("table-per-type"): `mulching_practices (practice_id, practice_type)` → composite FK to `practices (id, type)` (backed by `UNIQUE (id, type)`); `practice_type` is pinned to `'mulching'` by a CHECK, so a mulching row can't point at another type of practice.
+- Practices are signed once with a single `attestation_signature`; the record is not editable after signing.
+- Date columns use the `_at` suffix (`planted_at`, `started_at`, `finished_at`) even though they are `date`.
+
+**`practices` baseline snapshot ("Did any of these happen?" — multi-select):** The farmer can check any combination (e.g. Plowed + Compost); each option has its own boolean plus a sub-form, and "None of these" clears the others. The DB enforces *checked ⟺ sub-form filled* with CHECK constraints:
+- Tillage: `tilled`, `tillage_times` (1–3, 3 = "3 or more"), `tillage_tool` (`hand_hoe`/`animal_plow`/`tractor`), `tillage_area` (`coverage_level`).
+- Fertilizer: `fertilizer_used`, `fertilizer_type` (`urea`/`npk`/`other`), `fertilizer_kg`; `fertilizer_other` (product name) required when type is `other`.
+- Burning: `burned`, `burn_material` (`crop_residue`/`weeds_or_brush`/`other`), `burn_area`.
+- Compost/manure: `compost_or_manure_used`, `compost_manure_type`, `compost_manure_kg`.
+
+**Tillage classification:** `tillage_class` reuses the `tillage_practice` enum (`conventional`/`reduced`/`no_till`; `native_fallow` is rejected for practices). It is **calculated, not asked**: `no_till` iff `tilled = false`, enforced by `CHECK (tilled = (tillage_class <> 'no_till'))`. When tilling happened, the app (future submit function) picks `conventional`/`reduced` conservatively — partial-area tillage must not be classed more favorably than the evidence supports. Compare against `areas.tillage_practice` to detect baseline changes.
+
+**`mulching_practices` fields:** `applied_on`, `material` (`crop_residue`/`straw_or_hay`/`leaves_and_cuttings`/`other`, + `material_other`), `material_state` (`fresh_green`/`dry`), `source` (`this_farm`/`brought_in`, + `source_description` when brought in), `amount` + `unit` (`kg`/`t`/`other`), `coverage` (`all`/`about_half`/`small_part`). Mulch photos are not designed yet (likely the same storage-folder pattern as area photos).
+
+**Frontend flow (gluestack UI), 4 steps:** 1) crop + planted yes/no + `planted_at`; 2) the mulch (+ photos); 3) since your baseline (multi-select with sub-forms, calculated "counts as" tillage banner); 4) review & sign with wallet. Design canvas: https://claude.ai/artifact/CLFRVxxzAUP9cu7knhoGDx
+
+**Known gaps / open decisions:** `mass_unit = 'other'` can't be converted to kg (no `kg_per_unit`); `tillage_tool = 'tractor'` is ambiguous; `mulch_material`/`material_state` values are guesses from the mockup; practices have no API endpoints yet and the migration has not been applied (run `npx supabase db push`, then regenerate types).
+
 ## Migrations
 
 ```bash

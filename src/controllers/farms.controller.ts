@@ -8,7 +8,7 @@ const normalizeName = (name: string) =>
   name.toLowerCase().trim().split(/\s+/).sort().join(" ");
 
 const createFarmSchema = z.object({
-  name: z.string().min(20),
+  name: z.string().min(10),
   boundaries: boundariesSchema,
 });
 
