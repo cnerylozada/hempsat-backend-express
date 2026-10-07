@@ -48,12 +48,12 @@ All routes are prefixed with `API_PREFIX` (`/api/v1`) defined in `src/constants.
 |--------|------|------|-------------|
 | GET | `/areas/:farmId` | Yes | List the areas of a farm |
 | GET | `/areas/:farmId/:areaId` | Yes | Get one area of a farm, plus `photos: string[]` (signed URLs) |
-| POST | `/areas/:farmId` | Yes | Add area — multipart/form-data: `images` (1–10 files) + `name`, `description`, `tillagePractice`, `currentCrop`, `monthsUnderPractice`, `boundaries` (JSON string, ≥ 3 points), `signature` |
+| POST | `/areas/:farmId` | Yes | Add area — multipart/form-data: `images` (1–10 files) + `name`, `description`, `tillagePractice`, `crop`, `monthsUnderPractice`, `boundaries` (JSON string, ≥ 3 points), `attestationSignature` |
 
 ### Practices — `src/routes/practices.ts`
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/practices/:areaId` | Yes | List practices of an area (card fields: `id`, `type`, `crop`, `started_at`, `finished_at`, `tillage_class`) |
+| GET | `/practices/:areaId` | Yes | List practices of an area (card fields: `id`, `type`, `crop`, `started_at`, `finished_at`, `tillage_practice`, `created_at`) |
 | GET | `/practices/:areaId/:practiceId` | Yes | Practice detail: full `practices` row + `details` (child row matching `type`) + `photos: string[]` (signed URLs from `practices_photos/{userId}/{practiceId}`) |
 | POST | `/practices/:areaId/mulching` | Yes | Start a mulching practice — multipart/form-data: `images` (1–10) + step fields (`crop`, `plantedAt?`, `appliedOn`, `material`, `materialState`, `source`, `amount`, `unit`, `coverage`, optional JSON sub-forms `tillage`/`fertilizer`/`burning`/`compostOrManure`, `attestationSignature`). Inserts `practices` + `mulching_practices` atomically via the `create_mulching_practice` DB function; 409 if the area already has an active practice |
 
@@ -89,7 +89,7 @@ All routes are prefixed with `API_PREFIX` (`/api/v1`) defined in `src/constants.
 
 **`boundaries` (farms and areas):** Stored as `jsonb` (array of `{ latitude, longitude }`, at least 3 points). Requests are `multipart/form-data`, so every field arrives as a string: `boundariesSchema` in `src/controllers/utils.ts` parses the JSON text before validating, and numeric fields such as `monthsUnderPractice` use `z.coerce`. Farms also keep `name` and `address` (the deed's location text).
 
-**Areas:** An area belongs to a farm via `farm_id`. Its RLS policies check ownership through the parent farm (`farms.user_id = auth.jwt() ->> 'sub'`). Baseline fields (`tillage_practice` enum, `current_crop`, `months_under_practice`, `attestation_signature`) are mandatory.
+**Areas:** An area belongs to a farm via `farm_id`. Its RLS policies check ownership through the parent farm (`farms.user_id = auth.jwt() ->> 'sub'`). Baseline fields (`tillage_practice` enum, `crop`, `months_under_practice`, `attestation_signature`) are mandatory.
 
 **Area photos (Supabase Storage):**
 - Bucket `areas_baseline_photos` (private, JPG/PNG, 5 MB limit). Object path: `{userId}/{areaId}/{file.originalname}` — file names must be unique within an area (no upsert).
@@ -116,7 +116,8 @@ HempSat helps farmers earn carbon credits (Verra-style methodology) for regenera
 - Only one active practice per area (`one_active_practice_per_area`: partial unique index on `area_id WHERE finished_at IS NULL`). `finished_at` is set atomically when the practice is closed.
 - Parent/child ("table-per-type"): `mulching_practices (practice_id, practice_type)` → composite FK to `practices (id, type)` (backed by `UNIQUE (id, type)`); `practice_type` is pinned to `'mulching'` by a CHECK, so a mulching row can't point at another type of practice.
 - Practices are signed once with a single `attestation_signature`; the record is not editable after signing.
-- `crop` (practices) and `current_crop` (areas) are `text` columns validated by the shared `cropSchema` in `src/controllers/utils.ts` (the frontend renders it as a select).
+- **Naming:** a column that holds the same thing (same type and meaning) has the same name in every table — `crop`, `tillage_practice`, `attestation_signature`, `boundaries`; add a prefix only when needed to disambiguate (`tillage_area` vs `burn_area`). Request fields are the camelCase of the column (`crop`, `tillagePractice`, `attestationSignature`).
+- `crop` (areas and practices) is a `text` column validated by the shared `cropSchema` in `src/controllers/utils.ts` (the frontend renders it as a select).
 - Practice photos live in the private `practices_photos` bucket (`{userId}/{practiceId}/…`); nothing is stored in the table. A practice has exactly one row in its type's child table (`practice_id` is unique there).
 - Date columns use the `_at` suffix (`planted_at`, `started_at`, `finished_at`) even though they are `date`.
 
@@ -124,9 +125,9 @@ HempSat helps farmers earn carbon credits (Verra-style methodology) for regenera
 - Tillage: `tilled`, `tillage_times` (1–3, 3 = "3 or more"), `tillage_tool` (`hand_hoe`/`animal_plow`/`tractor`), `tillage_area` (`coverage_level`).
 - Fertilizer: `fertilizer_used`, `fertilizer_type` (`urea`/`npk`/`other`), `fertilizer_kg`; `fertilizer_other` (product name) required when type is `other`.
 - Burning: `burned`, `burn_material` (`crop_residue`/`weeds_or_brush`/`other`), `burn_area`.
-- Compost/manure: `compost_or_manure_used`, `compost_manure_type`, `compost_manure_kg`.
+- Compost/manure: `compost_manure_used`, `compost_manure_type`, `compost_manure_kg`.
 
-**Tillage classification:** `tillage_class` reuses the `tillage_practice` enum (`conventional`/`reduced`/`no_till`; `native_fallow` is rejected for practices). It is **calculated, not asked**: `no_till` iff `tilled = false`, enforced by `CHECK (tilled = (tillage_class <> 'no_till'))`. When tilling happened, the app (future submit function) picks `conventional`/`reduced` conservatively — partial-area tillage must not be classed more favorably than the evidence supports. Compare against `areas.tillage_practice` to detect baseline changes.
+**Tillage classification:** `practices.tillage_practice` uses the same `tillage_practice` enum as `areas.tillage_practice` (same type, same name) (`conventional`/`reduced`/`no_till`; `native_fallow` is rejected for practices). It is **calculated, not asked**: `no_till` iff `tilled = false`, enforced by `CHECK (tilled = (tillage_practice <> 'no_till'))`. When tilling happened, the app (future submit function) picks `conventional`/`reduced` conservatively — partial-area tillage must not be classed more favorably than the evidence supports. Compare against `areas.tillage_practice` to detect baseline changes.
 
 **`mulching_practices` fields:** `applied_on`, `material` (`crop_residue`/`straw_or_hay`/`leaves_and_cuttings`/`other`, + `material_other`), `material_state` (`fresh_green`/`dry`), `source` (`this_farm`/`brought_in`, + `source_description` when brought in), `amount` + `unit` (`kg`/`t`/`other`), `coverage` (`all`/`about_half`/`small_part`). Mulch photos are not designed yet (likely the same storage-folder pattern as area photos).
 

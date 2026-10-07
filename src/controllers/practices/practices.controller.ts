@@ -1,8 +1,7 @@
 import { Request, Response } from "express";
-import { supabaseClient } from "../libs/supabase";
-import { getSignedUrlsInFolder } from "../libs/storage";
-
-const PRACTICES_PHOTOS_BUCKET = "practices_photos";
+import { supabaseClient } from "../../libs/supabase";
+import { getSignedUrlsInFolder } from "../../libs/storage";
+import { PRACTICES_PHOTOS_BUCKET } from "./utils";
 
 export const getPracticesByAreaId = async (
   req: Request,
@@ -13,7 +12,9 @@ export const getPracticesByAreaId = async (
 
     const { data: practices, error } = await supabaseClient(req.token!)
       .from("practices")
-      .select("id, type, crop, started_at, finished_at, tillage_class")
+      .select(
+        "id, type, crop, started_at, finished_at, tillage_practice, created_at",
+      )
       .eq("area_id", areaId)
       .order("started_at", { ascending: false });
 
@@ -43,7 +44,7 @@ export const getPracticeById = async (
     const { data: practice, error } = await supabase
       .from("practices")
       .select(
-        `*, mulching_practices (applied_on, material, material_other, material_state, source, source_description, amount, unit, coverage)`,
+        `*, mulching_practices (material, material_other, material_state, source, source_description, amount, unit, coverage)`,
       )
       .eq("area_id", areaId)
       .eq("id", practiceId)

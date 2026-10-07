@@ -1,4 +1,5 @@
 import express from "express";
+import morgan from "morgan";
 import { API_PREFIX } from "./constants";
 import healthRoutes from "./routes/health";
 import authRoutes from "./routes/authentication";
@@ -9,6 +10,8 @@ import practicesRoutes from "./routes/practices";
 
 const app = express();
 
+morgan.token("user", (req) => (req as express.Request).userId ?? "anonymous");
+app.use(morgan(":method :url :status :response-time ms - user=:user"));
 app.use(express.json());
 
 app.use(API_PREFIX, healthRoutes);

@@ -12,3 +12,15 @@ export const boundariesSchema = z.preprocess(
     )
     .min(3),
 );
+
+// same list for areas.crop and practices.crop (text columns, validated here)
+export const cropSchema = z.enum([
+  "hemp",
+  "maize",
+  "beans",
+  "potato",
+  "quinoa",
+  "coffee",
+  "cacao",
+  "fallow",
+]);

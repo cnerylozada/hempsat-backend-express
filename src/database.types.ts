@@ -19,7 +19,7 @@ export type Database = {
           attestation_signature: string
           boundaries: Json | null
           created_at: string
-          current_crop: string
+          crop: string
           description: string
           farm_id: string
           id: string
@@ -32,7 +32,7 @@ export type Database = {
           attestation_signature: string
           boundaries?: Json | null
           created_at?: string
-          current_crop: string
+          crop: string
           description: string
           farm_id: string
           id?: string
@@ -45,7 +45,7 @@ export type Database = {
           attestation_signature?: string
           boundaries?: Json | null
           created_at?: string
-          current_crop?: string
+          crop?: string
           description?: string
           farm_id?: string
           id?: string
@@ -174,7 +174,7 @@ export type Database = {
           compost_manure_type:
             | Database["public"]["Enums"]["compost_manure_kind"]
             | null
-          compost_or_manure_used: boolean
+          compost_manure_used: boolean
           created_at: string
           crop: string
           fertilizer_kg: number | null
@@ -186,7 +186,7 @@ export type Database = {
           planted_at: string | null
           started_at: string
           tillage_area: Database["public"]["Enums"]["coverage_level"] | null
-          tillage_class: Database["public"]["Enums"]["tillage_practice"]
+          tillage_practice: Database["public"]["Enums"]["tillage_practice"]
           tillage_times: number | null
           tillage_tool: Database["public"]["Enums"]["tillage_tool"] | null
           tilled: boolean
@@ -205,7 +205,7 @@ export type Database = {
           compost_manure_type?:
             | Database["public"]["Enums"]["compost_manure_kind"]
             | null
-          compost_or_manure_used: boolean
+          compost_manure_used: boolean
           created_at?: string
           crop: string
           fertilizer_kg?: number | null
@@ -219,7 +219,7 @@ export type Database = {
           planted_at?: string | null
           started_at: string
           tillage_area?: Database["public"]["Enums"]["coverage_level"] | null
-          tillage_class: Database["public"]["Enums"]["tillage_practice"]
+          tillage_practice: Database["public"]["Enums"]["tillage_practice"]
           tillage_times?: number | null
           tillage_tool?: Database["public"]["Enums"]["tillage_tool"] | null
           tilled: boolean
@@ -238,7 +238,7 @@ export type Database = {
           compost_manure_type?:
             | Database["public"]["Enums"]["compost_manure_kind"]
             | null
-          compost_or_manure_used?: boolean
+          compost_manure_used?: boolean
           created_at?: string
           crop?: string
           fertilizer_kg?: number | null
@@ -252,7 +252,7 @@ export type Database = {
           planted_at?: string | null
           started_at?: string
           tillage_area?: Database["public"]["Enums"]["coverage_level"] | null
-          tillage_class?: Database["public"]["Enums"]["tillage_practice"]
+          tillage_practice?: Database["public"]["Enums"]["tillage_practice"]
           tillage_times?: number | null
           tillage_tool?: Database["public"]["Enums"]["tillage_tool"] | null
           tilled?: boolean

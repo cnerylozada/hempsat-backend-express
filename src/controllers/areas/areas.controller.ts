@@ -85,7 +85,7 @@ export const addNewAreaInFarm = async (
     boundaries,
     description,
     tillagePractice,
-    currentCrop,
+    crop,
     attestationSignature,
     monthsUnderPractice,
   } = result.data;
@@ -106,7 +106,7 @@ export const addNewAreaInFarm = async (
         description,
         farm_id: farmId,
         tillage_practice: tillagePractice,
-        current_crop: currentCrop,
+        crop,
         attestation_signature: attestationSignature,
         months_under_practice: monthsUnderPractice,
       })
