@@ -113,43 +113,40 @@ export type Database = {
       }
       mulching_practices: {
         Row: {
-          amount: number
           coverage: Database["public"]["Enums"]["coverage_level"]
           id: string
           material: Database["public"]["Enums"]["mulch_material"]
           material_other: string | null
           material_state: Database["public"]["Enums"]["material_state"]
+          mulch_amount_in_kg: number
           practice_id: string
           practice_type: Database["public"]["Enums"]["practice_type"]
           source: Database["public"]["Enums"]["input_source"]
           source_description: string | null
-          unit: Database["public"]["Enums"]["mass_unit"]
         }
         Insert: {
-          amount: number
           coverage: Database["public"]["Enums"]["coverage_level"]
           id?: string
           material: Database["public"]["Enums"]["mulch_material"]
           material_other?: string | null
           material_state: Database["public"]["Enums"]["material_state"]
+          mulch_amount_in_kg: number
           practice_id: string
           practice_type?: Database["public"]["Enums"]["practice_type"]
           source: Database["public"]["Enums"]["input_source"]
           source_description?: string | null
-          unit: Database["public"]["Enums"]["mass_unit"]
         }
         Update: {
-          amount?: number
           coverage?: Database["public"]["Enums"]["coverage_level"]
           id?: string
           material?: Database["public"]["Enums"]["mulch_material"]
           material_other?: string | null
           material_state?: Database["public"]["Enums"]["material_state"]
+          mulch_amount_in_kg?: number
           practice_id?: string
           practice_type?: Database["public"]["Enums"]["practice_type"]
           source?: Database["public"]["Enums"]["input_source"]
           source_description?: string | null
-          unit?: Database["public"]["Enums"]["mass_unit"]
         }
         Relationships: [
           {
@@ -169,18 +166,16 @@ export type Database = {
           burn_material:
             | Database["public"]["Enums"]["burn_material_kind"]
             | null
-          burned: boolean
-          compost_manure_kg: number | null
+          burn_material_other: string | null
+          compost_manure_amount_in_kg: number | null
           compost_manure_type:
             | Database["public"]["Enums"]["compost_manure_kind"]
             | null
-          compost_manure_used: boolean
           created_at: string
           crop: string
-          fertilizer_kg: number | null
+          fertilizer_amount_in_kg: number | null
           fertilizer_other: string | null
           fertilizer_type: Database["public"]["Enums"]["fertilizer_kind"] | null
-          fertilizer_used: boolean
           finished_at: string | null
           id: string
           planted_at: string | null
@@ -189,7 +184,6 @@ export type Database = {
           tillage_practice: Database["public"]["Enums"]["tillage_practice"]
           tillage_times: number | null
           tillage_tool: Database["public"]["Enums"]["tillage_tool"] | null
-          tilled: boolean
           type: Database["public"]["Enums"]["practice_type"]
           updated_at: string
         }
@@ -200,20 +194,18 @@ export type Database = {
           burn_material?:
             | Database["public"]["Enums"]["burn_material_kind"]
             | null
-          burned: boolean
-          compost_manure_kg?: number | null
+          burn_material_other?: string | null
+          compost_manure_amount_in_kg?: number | null
           compost_manure_type?:
             | Database["public"]["Enums"]["compost_manure_kind"]
             | null
-          compost_manure_used: boolean
           created_at?: string
           crop: string
-          fertilizer_kg?: number | null
+          fertilizer_amount_in_kg?: number | null
           fertilizer_other?: string | null
           fertilizer_type?:
             | Database["public"]["Enums"]["fertilizer_kind"]
             | null
-          fertilizer_used: boolean
           finished_at?: string | null
           id?: string
           planted_at?: string | null
@@ -222,7 +214,6 @@ export type Database = {
           tillage_practice: Database["public"]["Enums"]["tillage_practice"]
           tillage_times?: number | null
           tillage_tool?: Database["public"]["Enums"]["tillage_tool"] | null
-          tilled: boolean
           type: Database["public"]["Enums"]["practice_type"]
           updated_at?: string
         }
@@ -233,20 +224,18 @@ export type Database = {
           burn_material?:
             | Database["public"]["Enums"]["burn_material_kind"]
             | null
-          burned?: boolean
-          compost_manure_kg?: number | null
+          burn_material_other?: string | null
+          compost_manure_amount_in_kg?: number | null
           compost_manure_type?:
             | Database["public"]["Enums"]["compost_manure_kind"]
             | null
-          compost_manure_used?: boolean
           created_at?: string
           crop?: string
-          fertilizer_kg?: number | null
+          fertilizer_amount_in_kg?: number | null
           fertilizer_other?: string | null
           fertilizer_type?:
             | Database["public"]["Enums"]["fertilizer_kind"]
             | null
-          fertilizer_used?: boolean
           finished_at?: string | null
           id?: string
           planted_at?: string | null
@@ -255,7 +244,6 @@ export type Database = {
           tillage_practice?: Database["public"]["Enums"]["tillage_practice"]
           tillage_times?: number | null
           tillage_tool?: Database["public"]["Enums"]["tillage_tool"] | null
-          tilled?: boolean
           type?: Database["public"]["Enums"]["practice_type"]
           updated_at?: string
         }
@@ -347,7 +335,6 @@ export type Database = {
       coverage_level: "all" | "about_half" | "small_part"
       fertilizer_kind: "urea" | "npk" | "other"
       input_source: "this_farm" | "brought_in"
-      mass_unit: "kg" | "t" | "other"
       material_state: "fresh_green" | "dry"
       mulch_material:
         | "crop_residue"
@@ -489,7 +476,6 @@ export const Constants = {
       coverage_level: ["all", "about_half", "small_part"],
       fertilizer_kind: ["urea", "npk", "other"],
       input_source: ["this_farm", "brought_in"],
-      mass_unit: ["kg", "t", "other"],
       material_state: ["fresh_green", "dry"],
       mulch_material: [
         "crop_residue",

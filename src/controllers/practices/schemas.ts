@@ -10,7 +10,6 @@ const jsonField = <T extends z.ZodType>(schema: T) =>
 
 export const coverageLevel = z.enum(["all", "about_half", "small_part"]);
 
-// "Did any of these happen?" — each sub-form is sent only when its option was checked
 const tillageSchema = z.object({
   times: z.number().int().min(1).max(3), // 3 = "3 or more"
   tool: z.enum(["hand_hoe", "animal_plow", "tractor"]),
@@ -20,28 +19,33 @@ const tillageSchema = z.object({
 const fertilizerSchema = z
   .object({
     type: z.enum(["urea", "npk", "other"]),
-    kg: z.number().positive(),
-    other: z.string().min(1).optional(),
+    amountInKg: z.number().positive(),
+    other: z.string().optional(),
   })
   .refine((f) => f.type !== "other" || f.other, {
     message: "Product name is required when the fertilizer is other",
     path: ["other"],
   });
 
-const burningSchema = z.object({
-  material: z.enum(["crop_residue", "weeds_or_brush", "other"]),
-  area: coverageLevel,
-});
+const burningSchema = z
+  .object({
+    material: z.enum(["crop_residue", "weeds_or_brush", "other"]),
+    other: z.string().optional(),
+    area: coverageLevel,
+  })
+  .refine((b) => b.material !== "other" || b.other, {
+    message: "Say what was burned when the material is other",
+    path: ["other"],
+  });
 
 const compostOrManureSchema = z.object({
   type: z.enum(["compost", "manure"]),
-  kg: z.number().positive(),
+  amountInKg: z.number().positive(),
 });
 
-// fields every practice type's starter form shares (steps "your crop", "since your baseline" and "review & sign")
 export const baselineFields = {
   crop: cropSchema,
-  plantedAt: z.iso.date().optional(), // omitted = not planted yet
+  plantedAt: z.iso.datetime({ offset: true }).optional(),
   tillage: jsonField(tillageSchema).optional(),
   fertilizer: jsonField(fertilizerSchema).optional(),
   burning: jsonField(burningSchema).optional(),

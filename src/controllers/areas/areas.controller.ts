@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { Request, Response } from "express";
 import { supabaseClient } from "../../libs/supabase";
 import { getSignedUrlsInFolder, uploadFilesToFolder } from "../../libs/storage";
@@ -5,7 +6,7 @@ import { addNewAreaInFarmSchema } from "./schemas";
 
 const AREAS_BASELINE_PHOTOS_BUCKET = "areas_baseline_photos";
 
-export const getAreasByFarmId = async (
+export const getAreaListByFarmId = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
@@ -15,7 +16,8 @@ export const getAreasByFarmId = async (
     const { data: areas, error } = await supabaseClient(req.token!)
       .from("areas")
       .select("*")
-      .eq("farm_id", farmId);
+      .eq("farm_id", farmId)
+      .order("created_at", { ascending: false });
 
     if (error) {
       res.status(500).json({ error: "Failed to fetch areas" });
@@ -98,9 +100,25 @@ export const addNewAreaInFarm = async (
   try {
     const supabase = supabaseClient(req.token!);
 
-    const { data: area, error: insertError } = await supabase
+    // upload first, so an area never exists without its photos; if the insert
+    // fails afterwards, the photos are left in a folder no area points to
+    const areaId = randomUUID();
+
+    const photosUploaded = await uploadFilesToFolder(
+      supabase,
+      AREAS_BASELINE_PHOTOS_BUCKET,
+      `${req.userId}/${areaId}`,
+      files,
+    );
+    if (!photosUploaded) {
+      res.status(500).json({ error: "Failed to upload area photos" });
+      return;
+    }
+
+    const { error: insertError } = await supabase
       .from("areas")
       .insert({
+        id: areaId,
         name,
         boundaries,
         description,
@@ -109,23 +127,10 @@ export const addNewAreaInFarm = async (
         crop,
         attestation_signature: attestationSignature,
         months_under_practice: monthsUnderPractice,
-      })
-      .select("id")
-      .single();
+      });
 
     if (insertError) {
       res.status(500).json({ error: "Failed to add area" });
-      return;
-    }
-
-    const photosUploaded = await uploadFilesToFolder(
-      supabase,
-      AREAS_BASELINE_PHOTOS_BUCKET,
-      `${req.userId}/${area.id}`,
-      files,
-    );
-    if (!photosUploaded) {
-      res.status(500).json({ error: "Failed to upload area photos" });
       return;
     }
 

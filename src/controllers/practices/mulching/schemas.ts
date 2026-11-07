@@ -4,21 +4,18 @@ import { baselineFields, coverageLevel } from "../schemas";
 export const createMulchingPracticeSchema = z
   .object({
     ...baselineFields,
-
-    // the mulch
-    appliedOn: z.iso.date(),
+    startedAt: z.iso.datetime({ offset: true }),
     material: z.enum([
       "crop_residue",
       "straw_or_hay",
       "leaves_and_cuttings",
       "other",
     ]),
-    materialOther: z.string().min(1).optional(),
+    materialOther: z.string().optional(),
     materialState: z.enum(["fresh_green", "dry"]),
     source: z.enum(["this_farm", "brought_in"]),
-    sourceDescription: z.string().min(1).optional(),
-    amount: z.coerce.number().positive(),
-    unit: z.enum(["kg", "t", "other"]),
+    sourceDescription: z.string().optional(),
+    mulchAmountInKg: z.coerce.number().positive(),
     coverage: coverageLevel,
   })
   .refine((p) => p.material !== "other" || p.materialOther, {

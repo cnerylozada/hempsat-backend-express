@@ -38,7 +38,7 @@ export const getFarmById = async (
   }
 };
 
-export const getMyFarms = async (
+export const getMyFarmList = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
@@ -46,7 +46,8 @@ export const getMyFarms = async (
     const { data: farms, error } = await supabaseClient(req.token!)
       .from("farms")
       .select("*")
-      .eq("user_id", req.userId!);
+      .eq("user_id", req.userId!)
+      .order("created_at", { ascending: false });
 
     if (error) {
       res.status(500).json({ error: "Failed to fetch farms" });

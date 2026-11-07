@@ -3,7 +3,7 @@ import { supabaseClient } from "../../libs/supabase";
 import { getSignedUrlsInFolder } from "../../libs/storage";
 import { PRACTICES_PHOTOS_BUCKET } from "./utils";
 
-export const getPracticesByAreaId = async (
+export const getPracticeListByAreaId = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
@@ -44,7 +44,7 @@ export const getPracticeById = async (
     const { data: practice, error } = await supabase
       .from("practices")
       .select(
-        `*, mulching_practices (material, material_other, material_state, source, source_description, amount, unit, coverage)`,
+        `*, mulching_practices (material, material_other, material_state, source, source_description, mulch_amount_in_kg, coverage)`,
       )
       .eq("area_id", areaId)
       .eq("id", practiceId)
